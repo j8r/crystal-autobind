@@ -2,6 +2,7 @@
 # This sample parses a C header file, and prints all Clang cursors to STDOUT.
 module Autobind
   extend self
+
   def visit(parent, deep = 0)
     parent.visit_children do |cursor|
       if deep == 0
