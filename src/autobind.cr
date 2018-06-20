@@ -1,4 +1,7 @@
-require "./c2cr/parser"
+require "clang"
+require "./autobind/constant"
+require "./autobind/parser"
+require "./autobind/type"
 
 def default_include_directories(cflags)
   # C++
@@ -50,25 +53,22 @@ while arg = ARGV[i += 1]?
     cflags << arg
   when .ends_with?(".h")
     header = arg
-
   when "--remove-enum-prefix"
     remove_enum_prefix = true
   when .starts_with?("--remove-enum-prefix=")
     case value = arg[21..-1]
     when "", "false" then remove_enum_prefix = false
-    when "true" then remove_enum_prefix = true
-    else remove_enum_prefix = value
+    when "true"      then remove_enum_prefix = true
+    else                  remove_enum_prefix = value
     end
-
   when "--remove-enum-suffix"
     remove_enum_suffix = true
   when .starts_with?("--remove-enum-suffix=")
     case value = arg[21..-1]
     when "", "false" then remove_enum_suffix = false
-    when "true" then remove_enum_suffix = true
-    else remove_enum_suffix = value
+    when "true"      then remove_enum_suffix = true
+    else                  remove_enum_suffix = value
     end
-
   when "--help"
     STDERR.puts <<-EOF
     usage : c2cr [--help] [options] <header.h>
@@ -88,7 +88,6 @@ while arg = ARGV[i += 1]?
         --remove-enum-suffix[=true,false,<value>]
     EOF
     exit 0
-
   else
     abort "Unknown option: #{arg}"
   end
@@ -100,7 +99,7 @@ unless header
   abort "fatal : no header to create bindings for."
 end
 
-parser = C2CR::Parser.new(
+parser = Autobind::Parser.new(
   header,
   cflags,
   remove_enum_prefix: remove_enum_prefix,

@@ -1,8 +1,4 @@
-require "../../src/clang"
-require "./constant"
-require "./type"
-
-module C2CR
+module Autobind
   class Parser
     protected getter index : Clang::Index
     protected getter translation_unit : Clang::TranslationUnit
@@ -28,10 +24,10 @@ module C2CR
       # TODO: support C++ (rename input.c to input.cpp)
       # TODO: support local filename (use quotes instead of angle brackets)
       files = [
-        Clang::UnsavedFile.new("input.c", "#include <#{@header_name}>\n")
+        Clang::UnsavedFile.new("input.c", "#include <#{@header_name}>\n"),
       ]
       options = Clang::TranslationUnit.default_options |
-        Clang::TranslationUnit::Options.flags(DetailedPreprocessingRecord, SkipFunctionBodies)
+                Clang::TranslationUnit::Options.flags(DetailedPreprocessingRecord, SkipFunctionBodies)
 
       @index = Clang::Index.new
       @translation_unit = Clang::TranslationUnit.from_source(index, files, args, options)
@@ -48,9 +44,9 @@ module C2CR
           when .union_decl?       then visit_union(cursor)
           when .function_decl?    then visit_function(cursor)
           when .var_decl?         then visit_var(cursor)
-          #when .class_decl?
+            # when .class_decl?
             # TODO: C++ classes
-          #when .namespace_decl?
+            # when .namespace_decl?
             # TODO: C++ namespaces
           when .macro_expansion?, .macro_instantiation?, .inclusion_directive?
             # skip
@@ -100,7 +96,7 @@ module C2CR
     private def valid_crystal_literal?(value)
       case value
       when /^[-+]?(UInt|Long|ULong|LongLong|ULongLong)\.new\([+-]?[e0-9a-fA-F]+\)$/,
-        true
+           true
       when /^0x[e0-9a-fA-F]+$/
         true
       when /^[+-]?[e0-9a-fA-F]+$/
@@ -180,7 +176,7 @@ module C2CR
       end
     end
 
-    #private def visit_typedef_struct(cursor, c)
+    # private def visit_typedef_struct(cursor, c)
     #  case c.spelling
     #  when .empty?
     #    visit_struct(c, cursor.spelling)
@@ -191,9 +187,9 @@ module C2CR
     #    type = Constant.to_crystal(c.spelling)
     #    puts "  alias #{name} = #{type}"
     #  end
-    #end
+    # end
 
-    #private def visit_typedef_enum(cursor, c)
+    # private def visit_typedef_enum(cursor, c)
     #  case c.spelling
     #  when .empty?
     #    visit_enum(c, cursor.spelling)
@@ -204,7 +200,7 @@ module C2CR
     #    type = Type.to_crystal(c.type)
     #    puts "  alias #{name} = #{type}"
     #  end
-    #end
+    # end
 
     private def visit_typedef_type(cursor, c)
       name = Constant.to_crystal(cursor.spelling)
@@ -222,10 +218,10 @@ module C2CR
       print "  alias #{Constant.to_crystal(cursor.spelling)} = ("
       children.each_with_index do |c, index|
         print ", " unless index == 0
-        #unless c.spelling.empty?
+        # unless c.spelling.empty?
         #  print c.spelling.underscore
         #  print " : "
-        #end
+        # end
         print Type.to_crystal(c.type)
       end
       print ") -> "
@@ -236,7 +232,7 @@ module C2CR
       type = cursor.enum_decl_integer_type.canonical_type
       puts "  enum #{Constant.to_crystal(spelling)} : #{Type.to_crystal(type)}"
 
-      values = [] of {String, Int64|UInt64}
+      values = [] of {String, Int64 | UInt64}
 
       cursor.visit_children do |c|
         case c.kind
@@ -266,7 +262,7 @@ module C2CR
           # remove similar prefix/suffix patterns from all constants:
           start = prefix.size
           stop = Math.max(suffix.size + 1, 1)
-          constant = name[start .. -stop]
+          constant = name[start..-stop]
         end
 
         unless constant[0].ascii_uppercase?
@@ -365,7 +361,7 @@ module C2CR
     end
 
     def visit_union(cursor)
-      #p [:union, cursor.spelling]
+      # p [:union, cursor.spelling]
       # TODO: visit_union
     end
 
@@ -377,10 +373,10 @@ module C2CR
       print '('
       cursor.arguments.each_with_index do |c, index|
         print ", " unless index == 0
-        print Type.to_crystal(c.type)  # .canonical_type
+        print Type.to_crystal(c.type) # .canonical_type
       end
       print ") : "
-      puts Type.to_crystal(cursor.result_type)  # .canonical_type
+      puts Type.to_crystal(cursor.result_type) # .canonical_type
     end
 
     def visit_var(cursor)
