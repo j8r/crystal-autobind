@@ -1,3 +1,3 @@
-bin
-lib
-shard.lock
+/bin
+/lib
+/shard.lock

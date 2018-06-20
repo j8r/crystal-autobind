@@ -29,15 +29,15 @@ The newly generated `.cr` bindings can be used to create a documented shard wrap
 
 The development headers of the library are required whether the bindings are previously generated or not.
 
-The only caveat is to have `libclang` installed to regenerate the bindings.
+The only caveat is to have `clang`/`libclang` installed to regenerate the bindings.
 
 The bindings directory can thus be ignored in `.gitignore` to avoid versioning:
 
 ```
-bin
-lib
-shard.lock
-src/libc
+/bin
+/lib
+/shard.lock
+/src/libc
 ```
 
 ## Build

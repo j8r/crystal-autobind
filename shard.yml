@@ -1,24 +1,20 @@
 name: autobind
-version: 0.3.0
+version: 0.3.1
 
 authors:
   - Julien Portalier <julien@portalier.com>
   - Julien Reichardt <mi@jrei.ch>
 
-description: Automatic C binding generator for Crystal  
-
-dependencies:
- clang: 
-    github: ysbaddaden/clang.cr
-
-srcipts:
-  postinstall: shards build
+description: Automatic C binding generator for Crystal
 
 targets:
   autobind:
     main: src/autobind.cr
 
+scripts:
+   postinstall: shards build
+
 executables:
   - autobind
 
-license: ISC
+license: Apache-2.0
