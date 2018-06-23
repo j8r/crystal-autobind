@@ -1,6 +1,6 @@
 # Autobind
 
-[![ISC](https://img.shields.io/badge/License-ISC-blue.svg?style=flat-square)](https://en.wikipedia.org/wiki/ISC_license)
+[![Apache2.0](https://img.shields.io/badge/License-Apache2.0-blue.svg?style=flat-square)](https://en.wikipedia.org/wiki/Apache_License)
 
 ### Automatic C bindings generator for Crystal 
 
@@ -70,4 +70,4 @@ You will need the development headers of your targeted library, usually coming i
 
 ## License
 
-ISC License
+Distributed under the Apache 2.0 license.
