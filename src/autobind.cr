@@ -3,35 +3,6 @@ require "./autobind/constant"
 require "./autobind/parser"
 require "./autobind/type"
 
-def default_include_directories(cflags)
-  # C++
-  # args = {"-E", "-x", "c++", "-", "-v"}
-  # program = ENV["CXX"]? || "c++"
-
-  # C
-  args = {"-E", "-", "-v"}
-  program = ENV["CC"]? || "cc"
-
-  Process.run(program, args, shell: true, error: io = IO::Memory.new)
-
-  includes = [] of String
-  found_include = false
-
-  io.rewind.to_s.each_line do |line|
-    if line.starts_with?("#include ")
-      found_include = true
-    elsif found_include
-      line = line.lstrip
-      break unless line.starts_with?('.') || line.starts_with?('/')
-      includes << line.chomp
-    end
-  end
-
-  includes.reverse_each do |path|
-    cflags.unshift "-I#{path}"
-  end
-end
-
 cflags = [] of String
 header = nil
 remove_enum_prefix = remove_enum_suffix = false
@@ -93,7 +64,7 @@ while arg = ARGV[i += 1]?
   end
 end
 
-default_include_directories(cflags)
+Clang.default_c_include_directories cflags
 
 unless header
   abort "fatal : no header to create bindings for."
