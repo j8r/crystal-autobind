@@ -1,4 +1,3 @@
-require "clang"
 require "./autobind/constant"
 require "./autobind/parser"
 require "./autobind/type"
@@ -77,6 +76,7 @@ parser = Autobind::Parser.new(
   remove_enum_suffix: remove_enum_suffix,
 )
 
-puts "lib LibC"
 parser.parse
-puts "end"
+puts parser.libc_output
+check = parser.check
+puts check if check != true

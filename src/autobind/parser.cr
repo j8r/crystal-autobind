@@ -1,7 +1,22 @@
+require "clang"
+require "compiler/crystal/formatter"
+
 module Autobind
   class Parser
     protected getter index : Clang::Index
     protected getter translation_unit : Clang::TranslationUnit
+    getter output = ""
+
+    def libc_output
+      "lib LibC\n#{@output}end\n"
+    end
+
+    def check
+      Crystal.format libc_output
+      true
+    rescue ex
+      "The generated binding results of invalid Crystal code:\n#{ex}"
+    end
 
     @remove_enum_prefix : String | Bool
     @remove_enum_suffix : String | Bool
@@ -12,9 +27,7 @@ module Autobind
     end
 
     def self.parse(header_name, args = [] of String, process : Process = Process::FILE)
-      parser = new(header_name, args)
-      parser.parse
-      parser
+      new(header_name, args).parse
     end
 
     def initialize(@header_name : String, args = [] of String,
@@ -86,25 +99,14 @@ module Autobind
         value = value[1..-2]
       end
 
-      if valid_crystal_literal?(value)
-        puts "  #{cursor.spelling} = #{value}"
-      else
-        puts "  # #{cursor.spelling} = #{value}"
-      end
-    end
-
-    private def valid_crystal_literal?(value)
       case value
       when /^[-+]?(UInt|Long|ULong|LongLong|ULongLong)\.new\([+-]?[e0-9a-fA-F]+\)$/,
-           true
-      when /^0x[e0-9a-fA-F]+$/
-        true
-      when /^[+-]?[e0-9a-fA-F]+$/
-        true
-      when /^[_A-Z][_A-Za-z0-9]+$/
-        true
+           /^0x[e0-9a-fA-F]+$/,
+           /^[+-]?[e0-9a-fA-F]+$/,
+           /^[_A-Z][_A-Za-z0-9]+$/
+        @output += "  #{cursor.spelling.lstrip('_')} = #{value}\n"
       else
-        false
+        @output += "  # #{cursor.spelling} = #{value}\n"
       end
     end
 
@@ -169,7 +171,7 @@ module Autobind
           end
         else
           name = Constant.to_crystal(cursor.spelling)
-          puts "  alias #{name} = #{Type.to_crystal(type)}"
+          @output += "  alias #{name} = #{Type.to_crystal(type)}\n"
         end
       else
         visit_typedef_proc(cursor, children)
@@ -205,7 +207,7 @@ module Autobind
     private def visit_typedef_type(cursor, c)
       name = Constant.to_crystal(cursor.spelling)
       type = Type.to_crystal(c.type.canonical_type)
-      puts "  alias #{name} = #{type}"
+      @output += "  alias #{name} = #{type}\n"
     end
 
     private def visit_typedef_proc(cursor, children)
@@ -215,22 +217,21 @@ module Autobind
         ret = Type.to_crystal(children.shift.type.canonical_type)
       end
 
-      print "  alias #{Constant.to_crystal(cursor.spelling)} = ("
+      @output += "  alias #{Constant.to_crystal(cursor.spelling)} = ("
       children.each_with_index do |c, index|
-        print ", " unless index == 0
+        @output += ", " unless index == 0
         # unless c.spelling.empty?
         #  print c.spelling.underscore
         #  print " : "
         # end
-        print Type.to_crystal(c.type)
+        @output += Type.to_crystal(c.type).to_s
       end
-      print ") -> "
-      puts ret
+      @output += ") -> #{ret}\n"
     end
 
     def visit_enum(cursor, spelling = cursor.spelling)
       type = cursor.enum_decl_integer_type.canonical_type
-      puts "  enum #{Constant.to_crystal(spelling)} : #{Type.to_crystal(type)}"
+      @output += "  enum #{Constant.to_crystal(spelling)} : #{Type.to_crystal(type)}\n"
 
       values = [] of {String, Int64 | UInt64}
 
@@ -251,13 +252,10 @@ module Autobind
       prefix = cleanup_prefix_from_enum_constant(cursor, values)
       suffix = cleanup_suffix_from_enum_constant(cursor, values)
 
-      values.each do |(name, value)|
+      values.each do |name, value|
         if name.includes?(spelling)
           # when the enum spelling is fully duplicated in constants: remove it all
-          constant = name.sub(spelling, "")
-          while constant.starts_with?('_')
-            constant = constant[1..-1]
-          end
+          constant = name.delete(spelling).lstrip('_')
         else
           # remove similar prefix/suffix patterns from all constants:
           start = prefix.size
@@ -269,10 +267,10 @@ module Autobind
           constant = Constant.to_crystal(constant)
         end
 
-        puts "    #{constant} = #{value}"
+        @output += "    #{constant} = #{value}\n"
       end
 
-      puts "  end"
+      @output += "  end\n"
     end
 
     private def cleanup_prefix_from_enum_constant(cursor, values)
@@ -285,7 +283,7 @@ module Autobind
         reference.each_char do |c|
           testing = prefix + c
 
-          if values.all? { |e| e[0].starts_with?(testing) }
+          if values.all? &.first.starts_with?(testing)
             prefix = testing
           else
             # TODO: try to match a word delimitation, to only remove whole words
@@ -308,7 +306,7 @@ module Autobind
         reference.reverse.each_char do |c|
           testing = c.to_s + suffix
 
-          if values.all? { |e| e[0].ends_with?(testing) }
+          if values.all? &.first.ends_with?(testing)
             suffix = testing
           else
             # try to match a word delimitation, to only remove whole words not a
@@ -354,9 +352,9 @@ module Autobind
       end
 
       if members_count == 0
-        puts "  type #{Constant.to_crystal(spelling)} = Void"
+        @output += "  type #{Constant.to_crystal(spelling)} = Void\n"
       else
-        puts definition
+        @output += definition + '\n'
       end
     end
 
@@ -368,15 +366,12 @@ module Autobind
     def visit_function(cursor)
       arguments = cursor.arguments
 
-      print "  fun "
-      print cursor.spelling
-      print '('
+      @output += "  fun #{cursor.spelling}("
       cursor.arguments.each_with_index do |c, index|
         print ", " unless index == 0
         print Type.to_crystal(c.type) # .canonical_type
       end
-      print ") : "
-      puts Type.to_crystal(cursor.result_type) # .canonical_type
+      @output += ") : #{Type.to_crystal(cursor.result_type)}\n" # .canonical_type
     end
 
     def visit_var(cursor)

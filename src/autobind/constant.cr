@@ -7,7 +7,7 @@ module Autobind::Constant
     when "uint64_t" then "UInt64"
     else
       spelling = spelling[6..-1] if spelling.starts_with?("const ")
-      spelling = spelling.lstrip('_') if spelling.starts_with?('_')
+      spelling = spelling.lstrip('_')
 
       if spelling[0]?.try(&.ascii_uppercase?)
         spelling
