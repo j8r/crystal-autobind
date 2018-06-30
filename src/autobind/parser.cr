@@ -1,5 +1,6 @@
 require "clang"
 require "compiler/crystal/formatter"
+require "compiler/crystal/syntax"
 
 module Autobind
   class Parser
@@ -12,7 +13,10 @@ module Autobind
     end
 
     def check
+      # check formatting
       Crystal.format libc_output
+      # check syntax
+      Crystal::Parser.parse libc_output
       true
     rescue ex
       "The generated binding results of invalid Crystal code:\n#{ex}"
@@ -64,7 +68,7 @@ module Autobind
           when .macro_expansion?, .macro_instantiation?, .inclusion_directive?
             # skip
           else
-            puts "WARNING: unexpected #{cursor.kind} child cursor"
+            "  # WARNING: unexpected #{cursor.kind} child cursor"
           end
         end
         Clang::ChildVisitResult::Continue
@@ -98,21 +102,23 @@ module Autobind
         value = value[1..-2]
       end
 
-      @output += case value
+      variable = case value
                  when .starts_with? "0x"
                    # hexadecimal number
                    "  #{cursor.spelling.lstrip('_')} = #{value}"
                  when .starts_with? '0'
                    # octal number
                    "  #{cursor.spelling.lstrip('_')} = 0o#{value}"
-                 when /^[-+]?(UInt|Long|ULong|LongLong|ULongLong)\.new\([+-]?[e0-9a-fA-F]+\)$/,
-                      /^0x[e0-9a-fA-F]+$/,
-                      /^[+-]?[e0-9a-fA-F]+$/,
-                      /^[_A-Z][_A-Za-z0-9]+$/
-                   "  #{cursor.spelling.lstrip('_')} = #{value}"
                  else
-                   "  # #{cursor.spelling} = #{value}"
-                 end + '\n'
+                   "  #{cursor.spelling.lstrip('_')} = #{value}"
+                 end
+
+      begin
+        Crystal::Parser.parse variable
+        @output += "  #{variable}\n"
+      rescue ex
+        @output += "# #{variable}\n"
+      end
     end
 
     private def parse_literal_token(literal, io)
@@ -125,17 +131,17 @@ module Autobind
         else
           case suffix.try(&.upcase)
           when "U"
-            io << "UInt.new(" << number << ")"
+            io << "UInt.new(" << number << ')'
           when "L"
             if number.index('.')
-              io << "LongDouble.new(" << number << ")"
+              io << "LongDouble.new(" << number << ')'
             else
-              io << "Long.new(" << number << ")"
+              io << "Long.new(" << number << ')'
             end
           when "F"   then io << number << "_f32"
-          when "UL"  then io << "ULong.new(" << number << ")"
-          when "LL"  then io << "LongLong.new(" << number << ")"
-          when "ULL" then io << "ULongLong.new(" << number << ")"
+          when "UL"  then io << "ULong.new(" << number << ')'
+          when "LL"  then io << "LongLong.new(" << number << ')'
+          when "ULL" then io << "ULongLong.new(" << number << ')'
           else            io << number
           end
         end
@@ -347,7 +353,7 @@ module Autobind
               p [:TODO, :inner_struct, c]
             end
           else
-            str.puts "WARNING: unexpected #{c.kind} within #{cursor.kind} (visit_struct)"
+            str.puts "    # WARNING: unexpected #{c.kind} within #{cursor.kind} (visit_struct)"
           end
           Clang::ChildVisitResult::Continue
         end
