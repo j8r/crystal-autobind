@@ -68,7 +68,7 @@ module Autobind::Type
   end
 
   def self.visit_function_no_proto(type)
-    STDERR.puts "# UNSUPPORTED: FunctionNoProto #{type.inspect}"
+    raise "# UNSUPPORTED: FunctionNoProto #{type.inspect}"
   end
 
   def self.visit_incomplete_array(type)

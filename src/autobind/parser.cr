@@ -217,16 +217,18 @@ module Autobind
         ret = Type.to_crystal(children.shift.type.canonical_type)
       end
 
-      @output += "  alias #{Constant.to_crystal(cursor.spelling)} = ("
-      children.each_with_index do |c, index|
-        @output += ", " unless index == 0
-        # unless c.spelling.empty?
-        #  print c.spelling.underscore
-        #  print " : "
-        # end
-        @output += Type.to_crystal(c.type).to_s
+      @output += String.build do |str|
+        str << "  alias #{Constant.to_crystal(cursor.spelling)} = ("
+        children.each_with_index do |c, index|
+          str << ", " unless index == 0
+          # unless c.spelling.empty?
+          #  print c.spelling.underscore
+          #  print " : "
+          # end
+          str << Type.to_crystal c.type
+        end
+        str.puts ") -> #{ret}"
       end
-      @output += ") -> #{ret}\n"
     end
 
     def visit_enum(cursor, spelling = cursor.spelling)
@@ -255,7 +257,7 @@ module Autobind
       values.each do |name, value|
         if name.includes?(spelling)
           # when the enum spelling is fully duplicated in constants: remove it all
-          constant = name.delete(spelling).lstrip('_')
+          constant = name.sub(spelling, "").lstrip('_')
         else
           # remove similar prefix/suffix patterns from all constants:
           start = prefix.size
@@ -280,8 +282,8 @@ module Autobind
       if pre = @remove_enum_prefix
         reference = pre if pre.is_a?(String)
 
-        reference.each_char do |c|
-          testing = prefix + c
+        reference.each_char do |char|
+          testing = prefix + char
 
           if values.all? &.first.starts_with?(testing)
             prefix = testing
@@ -303,8 +305,8 @@ module Autobind
       if suf = @remove_enum_suffix
         reference = suf if suf.is_a?(String)
 
-        reference.reverse.each_char do |c|
-          testing = c.to_s + suffix
+        reference.reverse.each_char do |char|
+          testing = char + suffix
 
           if values.all? &.first.ends_with?(testing)
             suffix = testing
@@ -312,11 +314,8 @@ module Autobind
             # try to match a word delimitation, to only remove whole words not a
             # few letters that happen to match:
             a, b = suffix[0]?, suffix[1]?
-            if a && b && (a == '_' || (a.ascii_uppercase? && !b.ascii_uppercase?))
-              return suffix
-            else
-              return ""
-            end
+            return suffix if a && b && (a == '_' || (a.ascii_uppercase? && !b.ascii_uppercase?))
+            return ""
           end
         end
       end
@@ -351,11 +350,11 @@ module Autobind
         str.puts "  end"
       end
 
-      if members_count == 0
-        @output += "  type #{Constant.to_crystal(spelling)} = Void\n"
-      else
-        @output += definition + '\n'
-      end
+      @output += if members_count == 0
+                   "  type #{Constant.to_crystal(spelling)} = Void"
+                 else
+                   definition
+                 end + '\n'
     end
 
     def visit_union(cursor)
@@ -366,17 +365,19 @@ module Autobind
     def visit_function(cursor)
       arguments = cursor.arguments
 
-      @output += "  fun #{cursor.spelling}("
-      cursor.arguments.each_with_index do |c, index|
-        print ", " unless index == 0
-        print Type.to_crystal(c.type) # .canonical_type
+      @output += String.build do |str|
+        str << "  fun #{cursor.spelling}("
+        cursor.arguments.each_with_index do |c, index|
+          str << ", " unless index == 0
+          str << Type.to_crystal(c.type) # .canonical_type
+        end
+        str.puts ") : #{Type.to_crystal(cursor.result_type)}" # .canonical_type
       end
-      @output += ") : #{Type.to_crystal(cursor.result_type)}\n" # .canonical_type
     end
 
     def visit_var(cursor)
       type = Type.to_crystal(cursor.type.canonical_type)
-      #    puts "  $#{cursor.spelling} : #{type}"
+      "  $#{cursor.spelling} : #{type}"
     end
   end
 end

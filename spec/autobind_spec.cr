@@ -1,12 +1,17 @@
 require "./spec_helper"
 
-describe Autobind do
-  {% for header in %w(errno.h) %}
-  it "generates bindings for {{header.id}}" do
-    parser = Autobind::Parser.new {{header}}, ["-I/usr/include"]
+macro assert_binding(header_file)
+  it "generates bindings for {{header_file.id}}" do
+    parser = Autobind::Parser.new {{header_file}}, ["-I/usr/include"]
     parser.parse
-    check = parser.check
     parser.check.should be_true
   end
-  {% end %}
+end
+
+describe Autobind do
+  assert_binding "errno.h"
+  assert_binding "fcntl.h"
+  assert_binding "syscall.h"
+  assert_binding "ulimit.h"
+  assert_binding "utime.h"
 end

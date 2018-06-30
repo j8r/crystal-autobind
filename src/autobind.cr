@@ -79,4 +79,4 @@ parser = Autobind::Parser.new(
 parser.parse
 puts parser.libc_output
 check = parser.check
-puts check if check != true
+abort check if check != true
