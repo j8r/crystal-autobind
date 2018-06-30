@@ -73,7 +73,6 @@ module Autobind
 
     def visit_define(cursor, translation_unit)
       # TODO: analyze the tokens to build the constant value (e.g. type cast, ...)
-      # TODO: parse the result String to verify it is valid Crystal
 
       value = String.build do |str|
         previous = nil
@@ -99,15 +98,21 @@ module Autobind
         value = value[1..-2]
       end
 
-      case value
-      when /^[-+]?(UInt|Long|ULong|LongLong|ULongLong)\.new\([+-]?[e0-9a-fA-F]+\)$/,
-           /^0x[e0-9a-fA-F]+$/,
-           /^[+-]?[e0-9a-fA-F]+$/,
-           /^[_A-Z][_A-Za-z0-9]+$/
-        @output += "  #{cursor.spelling.lstrip('_')} = #{value}\n"
-      else
-        @output += "  # #{cursor.spelling} = #{value}\n"
-      end
+      @output += case value
+                 when .starts_with? "0x"
+                   # hexadecimal number
+                   "  #{cursor.spelling.lstrip('_')} = #{value}"
+                 when .starts_with? '0'
+                   # octal number
+                   "  #{cursor.spelling.lstrip('_')} = 0o#{value}"
+                 when /^[-+]?(UInt|Long|ULong|LongLong|ULongLong)\.new\([+-]?[e0-9a-fA-F]+\)$/,
+                      /^0x[e0-9a-fA-F]+$/,
+                      /^[+-]?[e0-9a-fA-F]+$/,
+                      /^[_A-Z][_A-Za-z0-9]+$/
+                   "  #{cursor.spelling.lstrip('_')} = #{value}"
+                 else
+                   "  # #{cursor.spelling} = #{value}"
+                 end + '\n'
     end
 
     private def parse_literal_token(literal, io)
