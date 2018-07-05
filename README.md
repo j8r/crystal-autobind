@@ -18,10 +18,19 @@ dependencies:
     github: j8r/crystal-autobind
 
 scripts:
-  postinstall: mkdir -p src/libc && lib/autobind/bin/autobind -I/usr/include errno.h > src/libc/errno.cr
+  postinstall: ./gen-bindings.sh
 ```
 
-This latest command will generate the bindings for `errno` at `src/libc/errno.cr`
+You can create a `gen-bindings.sh` script, with the permissions `chmod 750`
+
+```sh
+#!/bin/sh
+
+# Example of generating the bindings for `errno` at `src/libc/errno.cr`
+mkdir -p src/libc && lib/autobind/bin/autobind -I/usr/include errno.h > src/libc/errno.cr
+```
+
+The postinstall script will only be runned when included as a dependency on a project.
 
 ## Usage
 
