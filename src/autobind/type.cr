@@ -1,23 +1,23 @@
 module Autobind::Type
   def self.to_crystal(type : Clang::Type)
     case type.kind
-    when .void?              then "Void"
-    when .bool?              then "Bool"
-    when .char_u?, .u_char?  then "Char"
-    when .char16?, .u_short? then "Short"
-    when .char32?            then "UInt32"
-    when .u_int?             then "UInt"
-    when .u_long?            then "ULong"
-    when .u_long_long?       then "ULongLong"
-    when .w_char?            then "WChar"
-    when .char_s?, .s_char?  then "Char"
-    when .short?             then "Short"
-    when .int?               then "Int"
-    when .long?              then "Long"
-    when .long_long?         then "LongLong"
-    when .float?             then "Float"
-    when .double?            then "Double"
-    when .long_double?       then "LongDouble"
+    when .void?              then "LibC::Void"
+    when .bool?              then "LibC::Bool"
+    when .char_u?, .u_char?  then "LibC::Char"
+    when .char16?, .u_short? then "LibC::Short"
+    when .char32?            then "LibC::UInt32"
+    when .u_int?             then "LibC::UInt"
+    when .u_long?            then "LibC::ULong"
+    when .u_long_long?       then "LibC::ULongLong"
+    when .w_char?            then "LibC::WChar"
+    when .char_s?, .s_char?  then "LibC::Char"
+    when .short?             then "LibC::Short"
+    when .int?               then "LibC::Int"
+    when .long?              then "LibC::Long"
+    when .long_long?         then "LibC::LongLong"
+    when .float?             then "LibC::Float"
+    when .double?            then "LibC::Double"
+    when .long_double?       then "LibC::LongDouble"
     when .pointer?           then visit_pointer(type)
     when .enum?, .record?
       spelling = type.cursor.spelling
@@ -44,15 +44,11 @@ module Autobind::Type
   end
 
   def self.visit_pointer(type)
-    # pointee = to_crystal(type.pointee_type.canonical_type)
-    pointee = to_crystal(type.pointee_type)
-    "#{pointee}*"
+    "#{to_crystal type.pointee_type}*"
   end
 
   def self.visit_constant_array(type)
-    # element = to_crystal(type.array_element_type.canonical_type)
-    element = to_crystal(type.array_element_type)
-    "StaticArray(#{element}, #{type.array_size})"
+    "StaticArray(#{to_crystal type.array_element_type}, #{type.array_size})"
   end
 
   def self.visit_function_proto(type)
@@ -73,7 +69,6 @@ module Autobind::Type
 
   def self.visit_incomplete_array(type)
     # element_type = Type.to_crystal(type.array_element_type.canonical_type)
-    element_type = Type.to_crystal(type.array_element_type)
-    "#{element_type}*"
+    "#{Type.to_crystal type.array_element_type}*"
   end
 end

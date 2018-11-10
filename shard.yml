@@ -1,5 +1,5 @@
 name: autobind
-version: 0.4.2
+version: 0.5.0
 
 authors:
   - Julien Portalier <julien@portalier.com>
@@ -8,8 +8,8 @@ authors:
 description: Automatic C binding generator for Crystal
 
 dependencies:
-  clang: 
-    github: ysbaddaden/clang.cr 
+  clang:
+    github: ysbaddaden/clang.cr
     commit: 349a9185bc9a1756dd4c682c000764ec31a3b5da
 
 targets:

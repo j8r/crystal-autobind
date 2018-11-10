@@ -7,9 +7,31 @@ module Autobind
     protected getter index : Clang::Index
     protected getter translation_unit : Clang::TranslationUnit
     getter output = ""
+    getter name = "LibC"
+    getter? module_name : String? = nil
 
     def libc_output
-      "lib LibC\n#{@output}end\n"
+      check(
+        if mod = module_name?
+          "module #{mod}\nlib #{name}\n#{@output}end\nend\n"
+        else
+          "lib LibC\n#{@output}end\n"
+        end
+      )
+    end
+
+    private def check(output)
+      # check formatting
+      formatted = Crystal.format output
+      # check syntax
+      Crystal::Parser.parse formatted
+      formatted
+    rescue err : Crystal::SyntaxException
+      STDERR.puts "\
+          WARNING: invalid crystal code was generated for #{@header_name}. You \
+          will need to edit the generated code before it will run!\n\
+          Error: #{err}"
+      output
     end
 
     def check
@@ -37,7 +59,9 @@ module Autobind
     def initialize(@header_name : String, args = [] of String,
                    @process : Process = Process::FILE,
                    @remove_enum_prefix = false,
-                   @remove_enum_suffix = false)
+                   @remove_enum_suffix = false,
+                   @name = "LibC",
+                   @module_name = nil)
       # TODO: support C++ (rename input.c to input.cpp)
       # TODO: support local filename (use quotes instead of angle brackets)
       files = [
