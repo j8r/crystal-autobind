@@ -1,8 +1,8 @@
 module Autobind::Type
   def self.to_crystal(type : Clang::Type)
     case type.kind
-    when .void?              then "LibC::Void"
-    when .bool?              then "LibC::Bool"
+    when .void?              then "Void"
+    when .bool?              then "Bool"
     when .char_u?, .u_char?  then "LibC::Char"
     when .char16?, .u_short? then "LibC::Short"
     when .char32?            then "LibC::UInt32"
