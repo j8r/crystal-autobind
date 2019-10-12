@@ -1,5 +1,9 @@
 # Autobind
 
+**DEPRECATED** use https://github.com/crystal-lang/clang.cr instead.
+
+This project duplicates the original one, which have fixes not backported here.
+
 [![Apache2.0](https://img.shields.io/badge/License-Apache2.0-blue.svg?style=flat-square)](https://en.wikipedia.org/wiki/Apache_License)
 
 ### Automatic C bindings generator for Crystal 
